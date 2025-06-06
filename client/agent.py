@@ -32,7 +32,7 @@ class HubSpotAgent:
         is_python = server_script_path.endswith(".py")
         is_js = server_script_path.endswith(".js")
         if not (is_python or is_js):
-            raise ValueError("Server script must be a .py or .js file")
+            raise ValueError("El script del servidor debe ser un archivo .py o .js")
         
         command = "python" if is_python else "node"
         server_params = StdioServerParameters(
@@ -50,7 +50,7 @@ class HubSpotAgent:
         # List available tools
         response = await self.session.list_tools()
         tools = response.tools
-        print("\\nConnected to HubSpot server with tools:", [tool.name for tool in tools])
+        print("\\nConectado al servidor HubSpot con herramientas:", [tool.name for tool in tools])
     
     def get_conversation_prompt(self, user_input: str) -> str:
         """Generate appropriate conversation prompt based on current state"""
@@ -58,67 +58,67 @@ class HubSpotAgent:
         data_status = self._get_data_collection_status()
         
         if self.conversation_state == "greeting":
-            return f"""You are a friendly sales agent collecting information from a potential customer.
+            return f"""Eres un agente de ventas amigable que recopila información de un cliente potencial.
             
-Current conversation state: Initial greeting
-User input: "{user_input}"
+Estado actual de la conversación: Saludo inicial
+Entrada del usuario: "{user_input}"
 
-Your goals:
-1. Start with a warm greeting and introduction
-2. Begin collecting: name, email, phone, and company name
-3. Be conversational and natural, don't ask all questions at once
-4. Ask for one piece of information at a time
+Tus objetivos:
+1. Comenzar con un saludo cálido y una presentación
+2. Comenzar a recopilar: nombre, correo electrónico, teléfono y nombre de la empresa
+3. Ser conversacional y natural, no hagas todas las preguntas de una vez
+4. Pedir una información a la vez
 
-Current collected data: {data_status}
+Datos recopilados actualmente: {data_status}
 
-Respond naturally and ask for the next piece of missing information."""
+Responde de manera natural y pide la siguiente información que falte."""
 
         elif self.conversation_state == "collecting_info":
-            return f"""You are a friendly sales agent continuing to collect customer information.
+            return f"""Eres un agente de ventas amigable que continúa recopilando información del cliente.
             
-Current conversation state: Collecting basic information
-User input: "{user_input}"
+Estado actual de la conversación: Recopilando información básica
+Entrada del usuario: "{user_input}"
 
-Your goals:
-1. Extract any information provided by the user
-2. Continue collecting missing information: name, email, phone, company name
-3. Be natural and conversational
-4. Once you have all basic info, transition to scheduling
+Tus objetivos:
+1. Extraer cualquier información proporcionada por el usuario
+2. Continuar recopilando información faltante: nombre, correo electrónico, teléfono, nombre de la empresa
+3. Ser natural y conversacional
+4. Una vez que tengas toda la información básica, pasar a la programación de citas
 
-Current collected data: {data_status}
+Datos recopilados actualmente: {data_status}
 
-If all basic information is collected, ask about scheduling an appointment. Otherwise, ask for the next missing piece of information."""
+Si toda la información básica está recopilada, pregunta sobre programar una cita. De lo contrario, pide la siguiente información que falte."""
 
         elif self.conversation_state == "scheduling":
-            return f"""You are a friendly sales agent working on scheduling an appointment.
+            return f"""Eres un agente de ventas amigable trabajando en programar una cita.
             
-Current conversation state: Scheduling appointment
-User input: "{user_input}"
+Estado actual de la conversación: Programando cita
+Entrada del usuario: "{user_input}"
 
-Your goals:
-1. Help schedule an appointment date and time
-2. Extract appointment information from user input
-3. Confirm all details before proceeding
+Tus objetivos:
+1. Ayudar a programar una fecha y hora de cita
+2. Extraer información de la cita de la entrada del usuario
+3. Confirmar todos los detalles antes de proceder
 
-Current collected data: {data_status}
+Datos recopilados actualmente: {data_status}
 
-Focus on getting a specific appointment date and time."""
+Concéntrate en obtener una fecha y hora específica para la cita."""
 
         elif self.conversation_state == "creating_hubspot_records":
-            return f"""You are finalizing the customer onboarding process.
+            return f"""Estás finalizando el proceso de incorporación del cliente.
             
-Current conversation state: Creating HubSpot records
-User input: "{user_input}"
+Estado actual de la conversación: Creando registros de HubSpot
+Entrada del usuario: "{user_input}"
 
-All information has been collected: {self.collected_data}
+Toda la información ha sido recopilada: {self.collected_data}
 
-Use the available HubSpot tools to:
-1. Create the company record
-2. Create the contact record
-3. Create the lead record
-4. Create the engagement record for the appointment
+Usa las herramientas disponibles de HubSpot para:
+1. Crear el registro de la empresa
+2. Crear el registro del contacto
+3. Crear el registro del prospecto
+4. Crear el registro de compromiso para la cita
 
-Respond with confirmation of what was created."""
+Responde con confirmación de lo que fue creado."""
 
     def _get_data_collection_status(self) -> str:
         """Get a summary of what data has been collected"""
@@ -133,11 +133,11 @@ Respond with confirmation of what was created."""
         
         status = ""
         if collected:
-            status += "Collected: " + ", ".join(collected)
+            status += "Recopilado: " + ", ".join(collected)
         if missing:
-            status += " | Missing: " + ", ".join(missing)
+            status += " | Falta: " + ", ".join(missing)
         
-        return status or "No data collected yet"
+        return status or "No se han recopilado datos aún"
     
     def _extract_info_from_response(self, response_text: str, user_input: str):
         """Extract and update collected information from conversation"""
@@ -159,12 +159,16 @@ Respond with confirmation of what was created."""
         if phone_match and not self.collected_data["phone"]:
             self.collected_data["phone"] = phone_match.group()
         
-        # Extract name (if they say "I'm X" or "My name is X")
+        # Extract name (Spanish and English patterns)
         if not self.collected_data["name"]:
             name_patterns = [
                 r"i'?m\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)",
                 r"my name is\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)",
-                r"name'?s\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)"
+                r"name'?s\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)",
+                r"soy\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)",
+                r"me llamo\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)",
+                r"mi nombre es\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)",
+                r"nombre\s+es\s+([a-zA-Z]+(?:\s+[a-zA-Z]+)?)"
             ]
             for pattern in name_patterns:
                 match = re.search(pattern, user_lower)
@@ -172,12 +176,18 @@ Respond with confirmation of what was created."""
                     self.collected_data["name"] = match.group(1).title()
                     break
         
-        # Extract company
+        # Extract company (Spanish and English patterns)
         if not self.collected_data["company_name"]:
             company_patterns = [
                 r"work at\s+([a-zA-Z][a-zA-Z\s&,.-]+)",
                 r"company is\s+([a-zA-Z][a-zA-Z\s&,.-]+)",
-                r"from\s+([a-zA-Z][a-zA-Z\s&,.-]+(?:\s+(?:inc|llc|corp|company|ltd))?)"
+                r"from\s+([a-zA-Z][a-zA-Z\s&,.-]+(?:\s+(?:inc|llc|corp|company|ltd))?)",
+                r"trabajo en\s+([a-zA-Z][a-zA-Z\s&,.-]+)",
+                r"trabajo para\s+([a-zA-Z][a-zA-Z\s&,.-]+)",
+                r"mi empresa es\s+([a-zA-Z][a-zA-Z\s&,.-]+)",
+                r"empresa es\s+([a-zA-Z][a-zA-Z\s&,.-]+)",
+                r"de\s+([a-zA-Z][a-zA-Z\s&,.-]+(?:\s+(?:inc|llc|corp|company|ltd|sa|srl))?)",
+                r"en\s+([a-zA-Z][a-zA-Z\s&,.-]+(?:\s+(?:inc|llc|corp|company|ltd|sa|srl))?)"
             ]
             for pattern in company_patterns:
                 match = re.search(pattern, user_lower)
@@ -185,13 +195,18 @@ Respond with confirmation of what was created."""
                     self.collected_data["company_name"] = match.group(1).title()
                     break
         
-        # Extract appointment date
+        # Extract appointment date (Spanish and English patterns)
         if not self.collected_data["appointment_date"]:
-            # Simple date patterns
+            # Date patterns for both languages
             date_patterns = [
                 r"\b(monday|tuesday|wednesday|thursday|friday|saturday|sunday)\b",
+                r"\b(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\b",
                 r"\b(\d{1,2}/\d{1,2}/\d{4})\b",
-                r"\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\b"
+                r"\b(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d{1,2}\b",
+                r"\b(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s+\d{1,2}\b",
+                r"\bel\s+(lunes|martes|miércoles|miercoles|jueves|viernes|sábado|sabado|domingo)\b",
+                r"\bmañana\b",
+                r"\btomorrow\b"
             ]
             for pattern in date_patterns:
                 match = re.search(pattern, user_lower)
@@ -267,10 +282,10 @@ Respond with confirmation of what was created."""
                 "company": self.collected_data["company_name"]
             })
             
-            return f"Contact created: {contact_result.content}"
+            return f"Contacto creado: {contact_result.content}"
             
         except Exception as e:
-            return f"Error creating contact: {str(e)}"
+            return f"Error creando contacto: {str(e)}"
     
     async def _create_hubspot_records(self) -> str:
         """Create all HubSpot records using the MCP tools"""
@@ -281,7 +296,7 @@ Respond with confirmation of what was created."""
             company_result = await self.session.call_tool("create_company", {
                 "name": self.collected_data["company_name"]
             })
-            results.append(f"Company created: {company_result.content}")
+            results.append(f"Empresa creada: {company_result.content}")
             
             # Create contact
             contact_result = await self.session.call_tool("create_contact", {
@@ -291,26 +306,26 @@ Respond with confirmation of what was created."""
                 "phone": self.collected_data["phone"],
                 "company": self.collected_data["company_name"]
             })
-            results.append(f"Contact created: {contact_result.content}")
+            results.append(f"Contacto creado: {contact_result.content}")
             
             # Create engagement
             engagement_result = await self.session.call_tool("create_engagement", {
                 "type": "MEETING",
                 "timestamp": str(int(datetime.now().timestamp() * 1000)),
-                "body": f"Scheduled appointment for {self.collected_data['appointment_date']}"
+                "body": f"Cita programada para {self.collected_data['appointment_date']}"
             })
-            results.append(f"Engagement created: {engagement_result.content}")
+            results.append(f"Compromiso creado: {engagement_result.content}")
             
-            return "Great! I've successfully created your records in our system:\\n\\n" + "\\n".join(results) + "\\n\\nYour appointment has been scheduled and you'll receive a confirmation soon!"
+            return "¡Excelente! He creado exitosamente tus registros en nuestro sistema:\\n\\n" + "\\n".join(results) + "\\n\\n¡Tu cita ha sido programada y recibirás una confirmación pronto!"
             
         except Exception as e:
-            return f"I've collected all your information but encountered an issue creating the records: {str(e)}. Let me try again or connect you with someone who can help."
+            return f"He recopilado toda tu información pero encontré un problema creando los registros: {str(e)}. Déjame intentar de nuevo o conectarte con alguien que pueda ayudarte."
     
     async def start_conversation(self):
         """Start the interactive conversation"""
-        print("\\nHello! I'm your sales assistant. I'm here to help you get started with our services.")
-        print("Let me collect some basic information and schedule an appointment for you.")
-        print("Type 'quit' to exit at any time.\\n")
+        print("\\n¡Hola! Soy tu asistente de ventas. Estoy aquí para ayudarte a comenzar con nuestros servicios.")
+        print("Déjame recopilar alguna información básica y programar una cita para ti.")
+        print("Escribe 'quit' para salir en cualquier momento.\\n")
         
         # Initial state already set in __init__
         
@@ -319,19 +334,19 @@ Respond with confirmation of what was created."""
                 user_input = input("You: ").strip()
                 
                 if user_input.lower() == "quit":
-                    print("\\nThank you for your time! Have a great day!")
+                    print("\\n¡Gracias por tu tiempo! ¡Que tengas un gran día!")
                     break
                 
                 response = await self.process_user_input(user_input)
-                print(f"\\nAgent: {response}\\n")
+                print(f"\\nAgente: {response}\\n")
                 
                 # Show current status (for debugging)
                 if any(self.collected_data.values()):
-                    print(f"[Debug - Collected so far: {self._get_data_collection_status()}]\\n")
+                    print(f"[Debug - Recopilado hasta ahora: {self._get_data_collection_status()}]\\n")
                 
                 # If we've completed everything, end conversation
                 if self.conversation_state == "creating_hubspot_records" and all(self.collected_data.values()):
-                    print("Thank you! Everything has been set up. Have a great day!")
+                    print("¡Gracias! Todo ha sido configurado. ¡Que tengas un gran día!")
                     break
                 
             except Exception as e:
@@ -343,7 +358,7 @@ Respond with confirmation of what was created."""
 
 async def main():
     if len(sys.argv) < 2:
-        print("Usage: python agent.py <path_to_hubspot_server_script>")
+        print("Uso: python agent.py <ruta_al_script_del_servidor_hubspot>")
         sys.exit(1)
     
     agent = HubSpotAgent()

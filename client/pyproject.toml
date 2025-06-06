@@ -1,0 +1,11 @@
+[project]
+name = "hubspot-agent-client"
+version = "0.1.0"
+description = "MCP Client that acts as an agent to collect user information and send to HubSpot"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anthropic>=0.51.0",
+    "mcp>=1.9.0",
+    "python-dotenv>=1.1.0",
+]

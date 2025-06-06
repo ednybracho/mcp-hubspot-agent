@@ -1,0 +1,11 @@
+[project]
+name = "hubspot-mcp-server"
+version = "0.1.0"
+description = "MCP Server providing HubSpot integration tools for creating contacts, companies, leads and engagements"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp[cli]>=1.9.0",
+    "hubspot-api-client>=9.1.0",
+    "python-dotenv>=1.1.0",
+]
